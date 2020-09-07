@@ -13,18 +13,32 @@ public class TankJoinMsgDecoder extends ByteToMessageDecoder{
 
 	@Override
 	protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-		if(in.readableBytes() < 33) return; //TCP 拆包 粘包的问题
-		
-		TankJoinMsg msg = new TankJoinMsg();
+		if(in.readableBytes() < 8) return; //TCP 拆包 粘包的问题
 
-		msg.x = in.readInt();
-		msg.y = in.readInt();
-		msg.dir = Dir.values()[in.readInt()];
-		msg.moving = in.readBoolean();
-		msg.group = Group.values()[in.readInt()];
-		msg.id = new UUID(in.readLong(), in.readLong());
+		in.markReaderIndex(); //给ByteBuf做标记，标记从哪里
+
+		MsgType msgType = MsgType.values()[in.readInt()];
+		int length = in.readInt();
+
+		if (in.readableBytes() < length){
+			in.resetReaderIndex();
+			return;
+		}
+
+		byte[] bytes = new byte[length];
+		in.readBytes(bytes);
+
+		switch (msgType){
+			case TankJoin:
+				TankJoinMsg joinMsg = new TankJoinMsg();
+				joinMsg.parse(bytes);
+				out.add(joinMsg);
+				break;
+			default:
+				break;
+		}
 		
-		out.add(msg);
+
 	}
 
 }

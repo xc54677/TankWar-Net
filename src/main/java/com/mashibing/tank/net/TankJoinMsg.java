@@ -5,9 +5,7 @@ import com.mashibing.tank.Group;
 import com.mashibing.tank.Tank;
 import com.mashibing.tank.TankFrame;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.UUID;
 
 public class TankJoinMsg extends Msg{
@@ -77,6 +75,33 @@ public class TankJoinMsg extends Msg{
 		}
 
 		return bytes;
+	}
+
+	@Override
+	public void parse(byte[] bytes) {
+		DataInputStream dis = new DataInputStream(new ByteArrayInputStream(bytes));
+		try {
+			this.x = dis.readInt();
+			this.y = dis.readInt();
+			this.dir = Dir.values()[dis.readInt()];
+			this.moving = dis.readBoolean();
+			this.group = Group.values()[dis.readInt()];
+			this.id = new UUID(dis.readLong(), dis.readLong());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}finally {
+			try {
+				dis.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+	}
+
+	@Override
+	public MsgType getMsgType() {
+		return MsgType.TankJoin;
 	}
 
 	@Override
