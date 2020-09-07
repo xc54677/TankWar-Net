@@ -9,7 +9,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
-public class TankJoinMsgDecoder extends ByteToMessageDecoder{
+public class MsgDecoder extends ByteToMessageDecoder{
 
 	@Override
 	protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
@@ -28,16 +28,26 @@ public class TankJoinMsgDecoder extends ByteToMessageDecoder{
 		byte[] bytes = new byte[length];
 		in.readBytes(bytes);
 
-		switch (msgType){
+		Msg msg = null;
+
+		msg = (Msg) Class.forName("com.mashibing.tank.net." + msgType.toString() + "Msg").getDeclaredConstructor().newInstance();
+
+		/*switch (msgType){
 			case TankJoin:
-				TankJoinMsg joinMsg = new TankJoinMsg();
-				joinMsg.parse(bytes);
-				out.add(joinMsg);
+				msg = new TankJoinMsg();
+				break;
+			case TankStartMoving:
+				msg = new TankStartMovingMsg();
+				break;
+			case  TankStop:
+				msg = new TankStopMsg();
 				break;
 			default:
 				break;
-		}
-		
+		}*/
+
+		msg.parse(bytes);
+		out.add(msg);
 
 	}
 

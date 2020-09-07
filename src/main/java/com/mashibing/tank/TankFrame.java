@@ -1,5 +1,10 @@
 package com.mashibing.tank;
 
+import com.mashibing.tank.net.Client;
+import com.mashibing.tank.net.TankDirChangedMsg;
+import com.mashibing.tank.net.TankStartMovingMsg;
+import com.mashibing.tank.net.TankStopMsg;
+
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
@@ -108,20 +113,24 @@ public class TankFrame extends Frame {
             switch (key) {
                 case KeyEvent.VK_LEFT:
                     bL = true;
+                    setMainTankDir();
                     break;
                 case KeyEvent.VK_RIGHT:
                     bR = true;
+                    setMainTankDir();
                     break;
                 case KeyEvent.VK_UP:
                     bU = true;
+                    setMainTankDir();
                     break;
                 case KeyEvent.VK_DOWN:
                     bD = true;
+                    setMainTankDir();
                     break;
                 default:
                     break;
             }
-            setMainTankDir();
+
         }
 
         @Override
@@ -130,15 +139,19 @@ public class TankFrame extends Frame {
             switch (key) {
                 case KeyEvent.VK_LEFT:
                     bL = false;
+                    setMainTankDir();
                     break;
                 case KeyEvent.VK_RIGHT:
                     bR = false;
+                    setMainTankDir();
                     break;
                 case KeyEvent.VK_UP:
                     bU = false;
+                    setMainTankDir();
                     break;
                 case KeyEvent.VK_DOWN:
                     bD = false;
+                    setMainTankDir();
                     break;
                 case KeyEvent.VK_CONTROL:
                     myTank.fire();
@@ -150,21 +163,53 @@ public class TankFrame extends Frame {
         }
 
         private void setMainTankDir() {
+            // save old dir status
+            Dir dir = myTank.getDir();
+
             if (!bL && !bR && !bU && !bD){
                 myTank.setMoving(false);
+                //发出坦克停止的消息
+                Client.INSTANCE.send(new TankStopMsg(getMainTank()));
             }else{
-                myTank.setMoving(true);
+
                 if (bL) myTank.setDir(Dir.LEFT);
                 if (bR) myTank.setDir(Dir.RIGHT);
                 if (bU) myTank.setDir(Dir.UP);
                 if (bD) myTank.setDir(Dir.DOWN);
+
+                //发出坦克移动的消息
+                if (!myTank.isMoving()){
+                    Client.INSTANCE.send(new TankStartMovingMsg(getMainTank()));
+                }
+
+                myTank.setMoving(true);
+
+                if (dir != myTank.getDir()){
+                    Client.INSTANCE.send(new TankDirChangedMsg(getMainTank()));
+                }
+
             }
         }
     }
 
-    public Tank findByUUID(UUID id){
+    public Tank findTankByUUID(UUID id){
         return tanks.get(id);
     }
+
+    public Bullet findBulletByUUID(UUID id) {
+        for(int i=0; i<bullets.size(); i++) {
+            if(bullets.get(i).getId().equals(id))
+                return bullets.get(i);
+        }
+
+        return null;
+    }
+
+    public void addBullet(Bullet b) {
+        bullets.add(b);
+    }
+
+
 
     public Tank getMainTank(){
         return this.myTank;

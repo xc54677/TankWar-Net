@@ -1,5 +1,7 @@
 package com.mashibing.tank;
 
+import com.mashibing.tank.net.BulletNewMsg;
+import com.mashibing.tank.net.Client;
 import com.mashibing.tank.net.TankJoinMsg;
 
 import java.awt.*;
@@ -55,13 +57,21 @@ public class Tank {
     }
 
     public void paint(Graphics g) {
-        if(!living) {tf.tanks.remove(this);}
-
         //draw UUID in the tank
         Color c = g.getColor();
         g.setColor(Color.YELLOW);
         g.drawString(id.toString(), this.x, this.y - 10);
         g.setColor(c);
+
+        //draw a rect if dead!
+        if(!living) {
+            moving = false;
+            Color cc = g.getColor();
+            g.setColor(Color.WHITE);
+            g.drawRect(x, y, WIDTH, HEIGHT);
+            g.setColor(cc);
+            return;
+        }
 
         switch (dir){
             case LEFT:
@@ -85,7 +95,9 @@ public class Tank {
     }
 
     private void move() {
+        if(!living) return;
         if (!moving) {return;}
+
         switch (dir) {
             case LEFT:
                 x -= SPEED;
@@ -134,11 +146,19 @@ public class Tank {
     public void fire() {
         int bX = this.x + Tank.WIDTH/2 - Bullet.WIDTH/2;
         int bY = this.y + Tank.HEIGHT/2 - Bullet.HEIGHT/2;
-        tf.bullets.add(new Bullet(bX, bY, this.dir, this.group, this.tf));
+        Bullet b = new Bullet(this.id, bX, bY, this.dir, this.group, this.tf);
+
+        tf.bullets.add(b);
+
+        Client.INSTANCE.send(new BulletNewMsg(b));
     }
 
     public void die() {
         this.living = false;
+        int eX = this.getX() + Tank.WIDTH/2 - Explode.WIDTH/2;
+        int eY = this.getY() + Tank.HEIGHT/2 - Explode.HEIGHT/2;
+        TankFrame.INSTANCE.explodes.add(new Explode(eX, eY));
+
     }
 
     public Dir getDir() {
@@ -183,5 +203,13 @@ public class Tank {
 
     public UUID getId() {
         return id;
+    }
+
+    public boolean isLiving() {
+        return living;
+    }
+
+    public void setLiving(boolean living) {
+        this.living = living;
     }
 }

@@ -1,39 +1,41 @@
 package com.mashibing.tank.net;
 
 import com.mashibing.tank.Dir;
-import com.mashibing.tank.Group;
 import com.mashibing.tank.Tank;
 import com.mashibing.tank.TankFrame;
 
 import java.io.*;
 import java.util.UUID;
 
-public class TankJoinMsg extends Msg{
+public class TankStopMsg extends Msg{
 	public int x, y;
-	public Dir dir;
-	public boolean moving;
-	public Group group;
 	public UUID id;
 
-	public TankJoinMsg(Tank t) {
+	public TankStopMsg() {
+	}
+
+	public TankStopMsg(Tank t) {
 		this.x = t.getX();
 		this.y = t.getY();
-		this.dir = t.getDir();
-		this.moving = t.isMoving();
-		this.group = t.getGroup();
 		this.id = t.getId();
 	}
 
-	public TankJoinMsg(int x, int y, Dir dir, boolean moving, Group group, UUID id) {
+	public TankStopMsg(int x, int y, Dir dir) {
 		this.x = x;
 		this.y = y;
-		this.dir = dir;
-		this.moving = moving;
-		this.group = group;
 		this.id = id;
 	}
 
-	public TankJoinMsg() {
+	public int getX() {
+		return x;
+	}
+
+	public int getY() {
+		return y;
+	}
+
+	public UUID getId() {
+		return id;
 	}
 
 	@Override
@@ -44,16 +46,12 @@ public class TankJoinMsg extends Msg{
 		try {
 			baos = new ByteArrayOutputStream();
 			dos = new DataOutputStream(baos);
-			dos.writeInt(x);
-			dos.writeInt(y);
-			dos.writeInt(dir.ordinal());
-			dos.writeBoolean(moving);
-			dos.writeInt(group.ordinal());
 			dos.writeLong(id.getMostSignificantBits());
 			dos.writeLong(id.getLeastSignificantBits());
+			dos.writeInt(x);
+			dos.writeInt(y);
 			dos.flush();
 			bytes = baos.toByteArray();
-
 		}catch (Exception e){
 			e.printStackTrace();
 		}finally {
@@ -81,12 +79,9 @@ public class TankJoinMsg extends Msg{
 	public void parse(byte[] bytes) {
 		DataInputStream dis = new DataInputStream(new ByteArrayInputStream(bytes));
 		try {
+			this.id = new UUID(dis.readLong(), dis.readLong());
 			this.x = dis.readInt();
 			this.y = dis.readInt();
-			this.dir = Dir.values()[dis.readInt()];
-			this.moving = dis.readBoolean();
-			this.group = Group.values()[dis.readInt()];
-			this.id = new UUID(dis.readLong(), dis.readLong());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}finally {
@@ -101,7 +96,7 @@ public class TankJoinMsg extends Msg{
 
 	@Override
 	public MsgType getMsgType() {
-		return MsgType.TankJoin;
+		return MsgType.TankStop;
 	}
 
 	@Override
@@ -109,25 +104,21 @@ public class TankJoinMsg extends Msg{
 		return "TankJoinMsg{" +
 				"x=" + x +
 				", y=" + y +
-				", dir=" + dir +
-				", moving=" + moving +
-				", group=" + group +
 				", id=" + id +
 				'}';
 	}
 
 	@Override
 	public void handle() {
-		if (this.id.equals(TankFrame.INSTANCE.getMainTank().getId())
-				|| TankFrame.INSTANCE.findTankByUUID(this.id) != null){
+		if (this.id.equals(TankFrame.INSTANCE.getMainTank().getId())){
 			return;
 		}
 
-		System.out.println(this);
-
-		Tank t = new Tank(this);
-		TankFrame.INSTANCE.addTank(t);
-
-		Client.INSTANCE.send(new TankJoinMsg(TankFrame.INSTANCE.getMainTank()));
+		Tank t = TankFrame.INSTANCE.findTankByUUID(this.id);
+		if (t != null){
+			t.setMoving(false);
+			t.setX(this.x);
+			t.setY(this.y);
+		}
 	}
 }
