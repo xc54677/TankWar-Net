@@ -89,10 +89,11 @@ public class TankFrame extends Frame {
             explodes.get(i).paint(g);
         }
 
+        Collection<Tank> values = tanks.values();
         //子弹和坦克的碰撞检测
         for (int i = 0; i < bullets.size(); i++){
-            for (int j = 0; j < tanks.size(); j++){
-                bullets.get(i).collideWith(tanks.get(j));
+            for (Tank t : values){
+                bullets.get(i).collideWith(t);
             }
         }
     }
